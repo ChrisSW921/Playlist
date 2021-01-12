@@ -15,23 +15,26 @@ class SongListTableViewController: UITableViewController {
     @IBOutlet weak var songArtistEntry: UITextField!
     
     
+    //MARK: - Properties
+    var playlist: Playlist?
     
     
     
     //MARK: - Lifecycle methods
     override func viewDidLoad() {
         super.viewDidLoad()
-        SongController.shared.loadFromPersistenceStore()
     }
+    
     
     
     //MARK: - Actions
     @IBAction func addButtonTapped(_ sender: Any) {
         
         guard let songTitle = songTitleEntry.text, !songTitle.isEmpty,
-              let songArtist = songArtistEntry.text, !songArtist.isEmpty else { return }
-        
-        SongController.shared.createSong(title: songTitle, artist: songArtist)
+              let songArtist = songArtistEntry.text, !songArtist.isEmpty,
+              let currentPlaylist = playlist else { return }
+    
+        SongController.createSong(title: songTitle, artist: songArtist, playlist: currentPlaylist)
         
         tableView.reloadData()
         songTitleEntry.text = ""
@@ -47,17 +50,17 @@ class SongListTableViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return SongController.shared.songs.count
+        return playlist?.songs.count ?? 0
+        
     }
 
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
       
         let cell = tableView.dequeueReusableCell(withIdentifier: "song", for: indexPath)
-        cell.textLabel?.text = SongController.shared.songs[indexPath.row].title
-        cell.detailTextLabel?.text = SongController.shared.songs[indexPath.row].artist
-    
-
+        let currentPlaylist = playlist ?? Playlist(title: "Empty", songs: [])
+        cell.textLabel?.text = currentPlaylist.songs[indexPath.row].title
+        cell.detailTextLabel?.text = currentPlaylist.songs[indexPath.row].artist
         return cell
     }
 
@@ -65,8 +68,9 @@ class SongListTableViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             // Delete the row from the data source
-            let songToDelete = SongController.shared.songs[indexPath.row]
-            SongController.shared.deleteSong(songToDelete: songToDelete)
+            guard let currentPlaylist = playlist else {return}
+            let songToDelete = currentPlaylist.songs[indexPath.row]
+            SongController.deleteSong(songToDelete: songToDelete, playlist: currentPlaylist)
             tableView.deleteRows(at: [indexPath], with: .fade)
         }
     }
